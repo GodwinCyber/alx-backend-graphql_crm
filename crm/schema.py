@@ -4,6 +4,7 @@ from .models import Customer, Product, Order
 import re
 from django.db import transaction
 from django.utils import timezone
+from decimal import Decimal, InvalidOperation
 
 
 # =====================
@@ -123,7 +124,7 @@ class BulkCreateCustomers(graphene.Mutation):
 class CreateProductInput(graphene.InputObjectType):
     '''Input type for creating a new product'''
     name = graphene.String(required=True)
-    price = graphene.Float(required=True)
+    price = graphene.Float()
     stock = graphene.Int(required=False, default_value=0)
 
 
@@ -138,14 +139,21 @@ class CreateProduct(graphene.Mutation):
     @classmethod
     def mutate(cls, root, info, input):
         '''Create a new product'''
+        if not isinstance(input.price, (float, int)): # Ensure float or decimal
+            raise Exception("Invalid price format. Must be a float or decimal")
         if input.price <= 0:
             raise Exception("Price must be a positive value.")
         if input.stock < 0:
             raise Exception("Stock cannot be negative value.")
         
+        try:
+            price = Decimal(str(input.price))
+        except (InvalidOperation, ValueError):
+            raise Exception("Invalid price format. Must be a float or decimal")
+        
         product = Product.objects.create(
             name=input.name,
-            price=input.price,
+            price=price,
             stock=input.stock
         )
         product.save()
@@ -186,14 +194,14 @@ class CreateOrder(graphene.Mutation):
         
         order = Order.objects.create(
             customer=customer,
-            products=products.first(),  # Assuming single product per order for simplicity
-            total_amount=products.first().price,  # Initial total amount
+            # products=products.first(),  # Assuming single product per order for simplicity
+            # total_amount=products.first().price,  # Initial total amount
             order_date=input.order_date or timezone.now()
         )
-        # order.products.set(products)
-        # total = sum(p.price for p in products)
-        # order.total_amount = total
-        # order.save()
+        order.products.set(products)
+        total = sum(p.price for p in products)
+        order.total_amount = total
+        order.save()
 
         return CreateOrder(order=order, message="Order created successfully.")
 
