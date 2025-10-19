@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 
     # external libraries
     'graphene_django',
+    'django_filters',
 
     # local apps
     'crm',
