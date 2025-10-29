@@ -6,7 +6,8 @@ Optionally queries the GraphQL 'hello' field to ensure the endpoint is alive.
 
 import logging
 from datetime import datetime
-import requests
+from gql import gql, Client
+from gql.transport.requests import RequestsHTTPTransport
 
 # ============================================
 # Configure logging to /tmp/crm_heartbeat_log.txt
@@ -18,27 +19,34 @@ logging.basicConfig(
 )
 
 def log_crm_heartbeat():
-    """Logs a heartbeat message and optionally pings the GraphQL endpoint."""
+    """Logs a heartbeat message and queries the GraphQL 'hello' field."""
     timestamp = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
-
-    # Default status
     status = "CRM is alive"
 
-    # Optional: verify GraphQL hello field
+    # ============================================
+    # GraphQL endpoint setup
+    # ============================================
+    transport = RequestsHTTPTransport(
+        url="http://localhost:8000/graphql/",  # trailing slash required
+        verify=True,
+        retries=2,
+    )
+    client = Client(transport=transport, fetch_schema_from_transport=False)
+
+    # GraphQL query to check 'hello' field
+    query = gql("""
+    query {
+        hello
+    }
+    """)
+
     try:
-        response = requests.post(
-            "http://localhost:8000/graphql/",
-            json={"query": "{ hello }"},
-            timeout=5
-        )
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("data", {}).get("hello"):
-                status = f"CRM is alive - GraphQL OK ({data['data']['hello']})"
-            else:
-                status = "CRM is alive - GraphQL response missing 'hello'"
+        result = client.execute(query)
+        hello_value = result.get("hello")
+        if hello_value:
+            status = f"CRM is alive - GraphQL OK ({hello_value})"
         else:
-            status = f"CRM is alive - GraphQL returned HTTP {response.status_code}"
+            status = "CRM is alive - GraphQL response missing 'hello'"
     except Exception as e:
         status = f"CRM is alive - GraphQL check failed ({e})"
 
