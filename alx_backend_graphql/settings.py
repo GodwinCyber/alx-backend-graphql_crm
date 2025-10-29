@@ -40,18 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'graphene_django',
     'django_filters',
-    'django_crontab',
-
-    # local app
-    # 'crm',
 ]
 
-# =============================================
-# Cron job configuration - runs every 5 minutes
-# =============================================
-CRONJOBS = [
-    ('*/5 * * * *', 'crm.cron.log_crm_heartbeat')
-]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
