@@ -177,7 +177,7 @@ class CreateProduct(graphene.Mutation):
     message = graphene.String()
 
     @classmethod
-    def mutate(cls, root, info, input):
+    def mutate(cls, rootx, info, input):
         '''Create a new product'''
         if not isinstance(input.price, (float, int)): # Ensure float or decimal
             raise Exception("Invalid price format. Must be a float or decimal")
