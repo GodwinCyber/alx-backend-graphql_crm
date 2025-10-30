@@ -55,6 +55,56 @@ def log_crm_heartbeat():
     logging.info(log_message)
 
 
+# ============================================
+# LOW STOCKER LOGGER
+# ============================================
+logging.basicConfig(
+    filename="/tmp/low_stock_updates_log.txt",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+def update_low_stock():
+    '''Runs the graphql mutations to restock low-stock product and logs updates'''
+    timestamp = datetime.now().strftime("%d/%m/%Y-%H:%M:%S")
+
+    transport = RequestsHTTPTransport(
+        url="http://localhost:8000/graphql/",
+        verify=True,
+        retries=3,
+    )
+
+    mutation = gql("""
+    mutation UpdateLowStockProducts($restockAmount: Int!) {
+        updateLowStockProducts(restockAmount: $restockAmount) {
+            updatedProducts {
+                id
+                name
+                stock
+            }
+            message
+        }
+    }
+    """)
+
+    try:
+        params = {"restock-amount": 10}
+        result = Client.execute(mutation, variable_values=params)
+        updated = result.get("updateLowStockProducts", {}).get("updatedProducts", [])
+        message = result.get("updateLowStockProducts", {}).get("message", [])
+
+        if updated:
+            for product in updated:
+                logging.info(f"Product '{product['name']}' updated to stock {product['stock']}")
+        logging.info(f"Low stock update: {message}")
+
+        print(f"Low stock products updated: {len(updated)}")
+
+    except Exception as e:
+        logging.error(f"Error updating low-stock products: {e}")
+        print(f"Error occured while updating low-stock products: {e}")
+
+
 # The usage
 # check for erro
 # python manage.py check --settings=crm.settings

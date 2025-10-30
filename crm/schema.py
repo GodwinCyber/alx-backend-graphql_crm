@@ -441,7 +441,31 @@ class Query(graphene.ObjectType):
         '''Get orders with total amount greater than specified value'''
         queryset = Order.objects.filter(total_amount__gte=min_total)
         return queryset
+    
+# =================================
+# UpdateLowStockProduct Mutations
+# ==================================
+class UpdateLowStockProducts(graphene.Mutation):
+    '''Mutation to restock product with < 10'''
+    class Arguments:
+        restock_amount = graphene.Int(required=False, default_value=10)
 
+    updated_products = graphene.List(ProductType)
+    message = graphene.String()
+
+    @classmethod
+    def mutate(cls, root, info, restock_amount):
+        updated = []
+        with transaction.atomic():
+            low_stock_products = Product.objects.filter(stock__lt=10)
+            for product in low_stock_products:
+                product.stock += restock_amount
+                product.save()
+                updated.append(product)
+        return UpdateLowStockProducts(
+            updated_products=updated,
+            message=f"{len(updated)} products restocked successfully."
+        )
     
 class Mutation(graphene.ObjectType):
     '''Root Mutation'''
@@ -449,6 +473,7 @@ class Mutation(graphene.ObjectType):
     bulk_create_customers = BulkCreateCustomers.Field()
     create_product = CreateProduct.Field()
     create_order = CreateOrder.Field()
+    UpdateLowStockProducts = UpdateLowStockProducts.Field()
 
 
 
