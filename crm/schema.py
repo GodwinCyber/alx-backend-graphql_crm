@@ -447,6 +447,8 @@ class Query(graphene.ObjectType):
 # ==================================
 class UpdateLowStockProducts(graphene.Mutation):
     '''Mutation to restock product with < 10'''
+    from crm.models import Product
+    
     class Arguments:
         restock_amount = graphene.Int(required=False, default_value=10)
 
