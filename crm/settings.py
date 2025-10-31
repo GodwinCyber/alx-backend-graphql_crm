@@ -24,15 +24,6 @@ CRONJOBS = [
     ('0 */12 * * *', 'crm.cron.update_low_stock'),
 ]
 
-# =========================================
-# Celery configuration
-# =========================================
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-accept_content = ['json']
-timezone = 'UTC'
 
 from celery.schedules import crontab
 
